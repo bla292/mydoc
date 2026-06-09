@@ -14,7 +14,7 @@
             margin: 0;
             padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent; /* Убирает синее выделение при тапе */
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
@@ -41,7 +41,8 @@
         .tabs-container {
             padding: 16px 16px 12px 16px;
             background: #ffffff;
-            z-index: 5;
+            z-index: 20; /* Поверх всего */
+            position: relative;
         }
 
         .tabs {
@@ -61,18 +62,16 @@
             font-size: 14px;
             font-weight: 500;
             cursor: pointer;
-            z-index: 2;
+            z-index: 22;
             transition: color 0.3s ease;
             color: #666;
             outline: none;
         }
 
-        /* Текст на активной белой вкладке становится темным */
         .tab.active {
             color: #111111;
         }
 
-        /* Слайдер стал белым */
         .slider {
             position: absolute;
             top: 2px;
@@ -83,19 +82,22 @@
             border-radius: 6px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-            z-index: 1;
+            z-index: 21;
         }
 
         .tabs.select-second .slider {
             transform: translateX(100%);
         }
 
+        /* Контейнер для свайпов */
         .swiper-view-wrapper {
             display: flex;
             flex-grow: 1;
             width: 200%;
             transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
             touch-action: pan-y;
+            position: relative;
+            z-index: 10;
         }
 
         .content-section {
@@ -104,6 +106,8 @@
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
+            position: relative;
+            pointer-events: auto; /* Явно разрешаем клики внутри секций */
         }
 
         .upload-zone {
@@ -121,6 +125,7 @@
             transition: all 0.2s ease;
             margin-bottom: 20px;
             position: relative;
+            z-index: 12;
         }
 
         .upload-zone.has-image {
@@ -161,6 +166,8 @@
             gap: 16px;
             width: 100%;
             flex-grow: 1;
+            position: relative;
+            z-index: 12;
         }
 
         .form-group {
@@ -192,6 +199,8 @@
             gap: 12px;
             margin-top: auto;
             padding-top: 20px;
+            position: relative;
+            z-index: 15;
         }
 
         .btn {
@@ -220,15 +229,16 @@
 
         #details-saved-buttons { display: none; flex-direction: column; gap: 12px; }
 
+        /* Модалка QR */
         .modal-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.5); z-index: 10; display: none;
+            background-color: rgba(0, 0, 0, 0.5); z-index: 100; display: none;
             opacity: 0; transition: opacity 0.3s ease;
         }
         .modal-bottom-sheet {
             position: absolute; bottom: 0; left: 0; width: 100%;
             background-color: #ffffff; border-top-left-radius: 16px; border-top-right-radius: 16px;
-            padding: 24px 16px; z-index: 11; transform: translateY(100%);
+            padding: 24px 16px; z-index: 101; transform: translateY(100%);
             transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
             box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
             display: flex; flex-direction: column; align-items: center; text-align: center;
@@ -271,7 +281,7 @@
                 <input type="file" id="file-input" accept="image/*">
                 
                 <div class="footer-buttons">
-                    <button class="btn btn-primary" onclick="showQrModal()">
+                    <button class="btn btn-primary" type="button" onclick="showQrModal()">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
                             <path d="M17 3h2a2 2 0 0 1 2 2v2"></path>
@@ -406,7 +416,6 @@
             }
         });
 
-        // Функция вызова НАСТОЯЩЕГО меню «Поделиться» смартфона
         function shareApp() {
             if (navigator.share) {
                 navigator.share({
@@ -417,7 +426,6 @@
                     console.log('Ошибка отправки:', error);
                 });
             } else {
-                // Запасной вариант, если браузер старый
                 alert("Ссылка на документ: " + window.location.href);
             }
         }
@@ -497,9 +505,4 @@
         }
 
         function showQrModal() {
-            document.getElementById('modal-overlay').classList.add('show');
-            document.getElementById('qr-sheet').classList.add('show');
-        }
-
-        function hideQrModal() {
-            document.getElementById('modal-overlay')
+            document.getElementById('modal-overlay').classList.add(
