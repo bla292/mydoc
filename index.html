@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Удостоверение личности</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#e54338">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f9f9f9;
+            display: flex;
+            justify-content: center;
+            align-items: start;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .phone-container {
+            width: 100%;
+            max-width: 412px;
+            background: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 10px rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .back-btn svg {
+            width: 24px;
+            height: 24px;
+            stroke: #d32f2f;
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .header-title {
+            flex-grow: 1;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 500;
+            margin-right: 40px;
+        }
+
+        .tabs-container {
+            padding: 12px 16px;
+        }
+
+        .tabs {
+            display: flex;
+            background-color: #f0f0f0;
+            border-radius: 8px;
+            padding: 2px;
+            position: relative;
+            border: 1px solid #e0e0e0;
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px 0;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            z-index: 2;
+            transition: color 0.3s ease;
+            color: #666;
+        }
+
+        .tab.active {
+            color: white;
+        }
+
+        .slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            bottom: 2px;
+            width: calc(50% - 2px);
+            background-color: #e54338;
+            border-radius: 6px;
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            z-index: 1;
+        }
+
+        .tabs.select-second .slider {
+            transform: translateX(100%);
+        }
+
+        .content-section {
+            display: none;
+            padding: 16px;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .content-section.active {
+            display: flex;
+        }
+
+        .upload-zone {
+            width: 100%;
+            aspect-ratio: 1 / 1.4;
+            border: 2px dashed #ccc;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            overflow: hidden;
+            background-color: #fafafa;
+            transition: border-color 0.2s;
+            margin-bottom: 20px;
+        }
+
+        .upload-zone:hover {
+            border-color: #e54338;
+        }
+
+        .upload-icon {
+            width: 48px;
+            height: 48px;
+            fill: #999;
+            margin-bottom: 12px;
+        }
+
+        .upload-text {
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+            padding: 0 20px;
+        }
+
+        #preview-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: none;
+            background-color: #f0f0f0;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .requisites-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+            flex-grow: 1;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            color: #888;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 6px 0;
+            border: none;
+            border-bottom: none;
+            border-radius: 0;
+            font-size: 16px;
+            outline: none;
+            background-color: transparent;
+            color: #333;
+        }
+
+        .form-group input[readonly] {
+            color: #111;
+            font-weight: 400;
+        }
+
+        .footer-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: auto;
+            padding-top: 20px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .btn-primary {
+            background-color: #008be2;
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: #008be2;
+            border: 1px solid #008be2;
+        }
+
+        .btn-success {
+            background-color: #2e7d32;
+            color: white;
+        }
+
+        #details-saved-buttons {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 10;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-bottom-sheet {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #ffffff;
+            border-top-left-radius: 16px;
+            border-top-right-radius: 16px;
+            padding: 24px 16px;
+            z-index: 11;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .modal-overlay.show {
+            display: block;
+            opacity: 1;
+        }
+        .modal-bottom-sheet.show {
+            transform: translateY(0);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: #333;
+            cursor: pointer;
+            padding: 4px;
+            font-weight: bold;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #000;
+        }
+
+        .modal-subtitle {
+            font-size: 15px;
+            color: #555;
+            margin-bottom: 24px;
+        }
+
+        .qr-container {
+            width: 200px;
+            height: 200px;
+            background-color: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .qr-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .code-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .code-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #000;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="phone-container">
+        <header class="header">
+            <button class="back-btn" onclick="goBack()" aria-label="Назад">
+                <svg viewBox="0 0 24 24">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
+            <h1 class="header-title">Удостоверение личности</h1>
+        </header>
+
+        <div class="tabs-container">
+            <div class="tabs" id="tabs-switch">
+                <div class="slider"></div>
+                <div class="tab active" onclick="switchTab('document')">Документ</div>
+                <div class="tab" onclick="switchTab('details')">Реквизиты</div>
+            </div>
+        </div>
+
+        <main id="section-document" class="content-section active">
+            <div class="upload-zone" onclick="triggerUpload()">
+                <img id="preview-img" src="" alt="Ваш документ">
+                <div id="upload-prompt" style="display: flex; flex-direction: column; align-items: center;">
+                    <svg class="upload-icon" viewBox="0 0 24 24">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                    </svg>
+                    <span class="upload-text">Нажмите, чтобы загрузить изображение документа</span>
+                </div>
+            </div>
+            <input type="file" id="file-input" accept="image/*">
+            
+            <div class="footer-buttons">
+                <button class="btn btn-primary" onclick="showQrModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
+                        <path d="M17 3h2a2 2 0 0 1 2 2v2"></path>
+                        <path d="M21 17v2a2 2 0 0 1-2 2h-2"></path>
+                        <path d="M7 21H5a2 2 0 0 1-2-2v-2"></path>
+                        <rect x="7" y="7" width="3" height="3"></rect>
+                        <rect x="14" y="7" width="3" height="3"></rect>
+                        <rect x="14" y="14" width="3" height="3"></rect>
+                        <rect x="7" y="14" width="3" height="3"></rect>
+                    </svg>
+                    Предъявить документ
+                </button>
+                <button class="btn btn-secondary" type="button">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 12v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"></path>
+                        <polyline points="16 6 12 2 8 6"></polyline>
+                        <line x1="12" y1="2" x2="12" y2="15"></line>
+                    </svg>
+                    Отправить документ
+                </button>
+            </div>
+        </main>
+
+        <main id="section-details" class="content-section">
+            <form class="requisites-form" id="details-form" onsubmit="saveDetails(event)">
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <div class="form-group">
+                        <label>ФИО</label>
+                        <input type="text" id="field-fio" placeholder="Введите Фамилию Имя Отчество">
+                    </div>
+                    <div class="form-group">
+                        <label>ИИН</label>
+                        <input type="text" id="field-iin" placeholder="Введите 12-значный ИИН" maxlength="12">
+                    </div>
+                    <div class="form-group">
+                        <label>Дата рождения</label>
+                        <input type="text" placeholder="ДД.ММ.ГГГГ">
+                    </div>
+                    <div class="form-group">
+                        <label>Номер документа</label>
+                        <input type="text" placeholder="Введите номер удостоверения">
+                    </div>
+                    <div class="form-group">
+                        <label>Дата выдачи</label>
+                        <input type="text" placeholder="ДД.ММ.ГГГГ">
+                    </div>
+                    <div class="form-group">
+                        <label>Срок действия</label>
+                        <input type="text" placeholder="ДД.ММ.ГГГГ">
+                    </div>
+                </div>
+
+                <div class="footer-buttons">
+                    <button type="submit" id="save-btn" class="btn btn-success">
+                        Сохранить реквизиты
+                    </button>
+                    
+                    <div id="details-saved-buttons">
+                        <button type="button" class="btn btn-primary" onclick="showQrModal()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
+                                <path d="M17 3h2a2 2 0 0 1 2 2v2"></path>
+                                <path d="M21 17v2a2 2 0 0 1-2 2h-2"></path>
+                                <path d="M7 21H5a2 2 0 0 1-2-2v-2"></path>
+                                <rect x="7" y="7" width="3" height="3"></rect>
+                                <rect x="14" y="7" width="3" height="3"></rect>
+                                <rect x="14" y="14" width="3" height="3"></rect>
+                                <rect x="7" y="14" width="3" height="3"></rect>
+                            </svg>
+                            Предъявить документ
+                        </button>
+                        <button type="button" class="btn btn-secondary">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 12v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"></path>
+                                <polyline points="16 6 12 2 8 6"></polyline>
+                                <line x1="12" y1="2" x2="12" y2="15"></line>
+                            </svg>
+                            Отправить реквизиты
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </main>
+
+        <div id="modal-overlay" class="modal-overlay" onclick="hideQrModal()"></div>
+        <div id="qr-sheet" class="modal-bottom-sheet">
+            <button type="button" class="modal-close" onclick="hideQrModal()">X</button>
+            <h2 class="modal-title">Удостоверение личности</h2>
+            <p class="modal-subtitle">Покажите QR-код сотруднику</p>
+            
+            <div class="qr-container">
+                <img id="modal-qr-img" src="" alt="QR Код">
+            </div>
+            
+            <p class="code-label">или скажите код</p>
+            <p class="code-value" id="modal-code-value">000000</p>
+        </div>
+    </div>
+
+    <script>
+        var generatedQrUrl = "";
+        var generatedCode = "";
+
+        generateRandomData("Пользователь");
+
+        function goBack() {
+            window.location.href = "https://kaspi.kz";
+        }
+
+        function switchTab(tabName) {
+            var tabsWrap = document.getElementById('tabs-switch');
+            var tabElements = document.querySelectorAll('.tab');
+            var secDocument = document.getElementById('section-document');
+            var secDetails = document.getElementById('section-details');
+
+            if (tabName === 'document') {
+                tabsWrap.classList.remove('select-second');
+                tabElements[0].classList.add('active');
+                tabElements[1].classList.remove('active');
+                secDocument.classList.add('active');
+                secDetails.classList.remove('active');
+            } else {
+                tabsWrap.classList.add('select-second');
+                tabElements[1].classList.add('active');
+                tabElements[0].classList.remove('active');
+                secDetails.classList.add('active');
+                secDocument.classList.remove('active');
+            }
+        }
+
+        function triggerUpload() {
+            document.getElementById('file-input').click();
+        }
+
+        document.getElementById('file-input').addEventListener('change', function(event) {
+            var file = event.target.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var img = document.getElementById('preview-img');
+                    var prompt = document.getElementById('upload-prompt');
+                    img.src = e.target.result;
+                    img.style.display = 'block';
+                    prompt.style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function generateRandomData(seedText) {
+            var randomNumber = Math.floor(100000 + Math.random() * 900000);
+            generatedCode = randomNumber;
+            generatedQrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(seedText + "_" + randomNumber);
+            
+            document.getElementById('modal-qr-img').src = generatedQrUrl;
+            document.getElementById('modal-code-value').innerText = generatedCode;
+        }
+
+        function saveDetails(event) {
+            event.preventDefault();
+            var form = document.getElementById('details-form');
+            var inputs = form.querySelectorAll('input');
+            var saveBtn = document.getElementById('save-btn');
+            var savedButtonsBlock = document.getElementById('details-saved-buttons');
+
+            for (var i = 0; i < inputs.length; i++) {
+                inputs[i].setAttribute('readonly', true);
+            }
+
+            var fioValue = document.getElementById('field-fio').value || "User";
+            var iinValue = document.getElementById('field-iin').value || "000";
+            generateRandomData(fioValue + "_" + iinValue);
+
+            saveBtn.style.display = 'none';
+            savedButtonsBlock.style.display = 'flex';
+            
+            alert('Реквизиты сохранены! QR-код успешно сгенерирован.');
+        }
+
+        function showQrModal() {
+            var overlay = document.getElementById('modal-overlay');
+            var sheet = document.getElementById('qr-sheet');
+            overlay.classList.add('show');
+            sheet.classList.add('show');
+        }
+
+        function hideQrModal() {
+            var overlay = document.getElementById('modal-overlay');
+            var sheet = document.getElementById('qr-sheet');
+            overlay.classList.remove('show');
+            sheet.classList.remove('show');
+        }
+    </script>
+</body>
+</html>
