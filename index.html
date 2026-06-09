@@ -38,7 +38,6 @@
             overflow: hidden;
         }
 
-        /* КРАСИВАЯ СТРОГАЯ ШАПКА ПРИЛОЖЕНИЯ */
         .app-header {
             display: flex;
             align-items: center;
@@ -73,7 +72,6 @@
             color: #111111;
         }
 
-        /* ПАНЕЛЬ ВКЛАДОК СТРОГО ПОД ШАПКОЙ */
         .tabs-container {
             padding: 8px 16px 12px 16px;
             background: #ffffff;
@@ -455,15 +453,29 @@
             }
         });
 
+        // УЛУЧШЕННАЯ ФУНКЦИЯ ШЕРИНГА БЕЗ СТОРОННИХ САЙТОВ
         function shareApp() {
-            if (navigator.share) {
-                navigator.share({
-                    title: 'Удостоверение личности',
-                    text: 'Моё электронное удостоверение личности',
-                    url: window.location.href
-                }).catch(function(e){ console.log(e); });
+            var shareData = {
+                title: 'Удостоверение личности',
+                text: 'Моё электронное удостоверение личности',
+                url: window.location.href
+            };
+
+            // Проверяем, поддерживает ли встроенный браузер системное меню отправки
+            if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+                navigator.share(shareData)
+                    .then(function() { console.log('Успешно отправлено'); })
+                    .catch(function(err) { console.log('Ошибка шеринга: ', err); });
             } else {
-                alert("Ссылка: " + window.location.href);
+                // Железобетонный фолбек: если меню заблокировано средой WebView, просто копируем ссылку
+                var dummy = document.createElement('input');
+                document.body.appendChild(dummy);
+                dummy.value = window.location.href;
+                dummy.select();
+                document.execCommand('copy');
+                document.body.removeChild(dummy);
+                
+                alert("Ссылка на документ скопирована в буфер обмена!");
             }
         }
 
@@ -503,6 +515,22 @@
         }, {passive: false});
 
         wrapper.addEventListener('touchmove', function(e) {
+            if (document.activeElement.tagName === 'INPUT') {
+                isTracking = false;
+                return;
+            }
+            if (document.getElementById('modal-overlay').classList.contains('show')) return;
+            
+            isTracking = true;
+            isScrollingPercent = false;
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            
+            wrapper.style.transition = 'none';
+            slider.style.transition = 'none';
+        }, {passive: false});
+
+        wrapper.addEventListener('touchmove', function(e) {
             if (!isTracking) return;
             
             var currentX = e.touches[0].clientX;
@@ -523,6 +551,7 @@
 
             if (isScrollingPercent) {
                 if (e.cancelable) e.preventDefault();
+                
                 var currentXOffset = (-currentTab * containerWidth) + diffX;
 
                 if (currentXOffset > 0) currentXOffset /= 3;
