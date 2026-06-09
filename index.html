@@ -2,10 +2,10 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Удостоверение личности</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#e54338">
+    <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <style>
@@ -14,15 +14,17 @@
             margin: 0;
             padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent; /* Убирает синее выделение при тапе */
         }
 
         body {
-            background-color: #f9f9f9;
+            background-color: #ffffff;
             display: flex;
             justify-content: center;
             align-items: start;
             min-height: 100vh;
             color: #333;
+            overflow-x: hidden;
         }
 
         .phone-container {
@@ -32,14 +34,14 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 0 10px rgba(0,0,0,0.05);
             position: relative;
             overflow: hidden;
         }
 
-        /* Хедер полностью удален, табы теперь сверху */
         .tabs-container {
             padding: 16px 16px 12px 16px;
+            background: #ffffff;
+            z-index: 5;
         }
 
         .tabs {
@@ -49,6 +51,7 @@
             padding: 2px;
             position: relative;
             border: 1px solid #e0e0e0;
+            user-select: none;
         }
 
         .tab {
@@ -61,20 +64,24 @@
             z-index: 2;
             transition: color 0.3s ease;
             color: #666;
+            outline: none;
         }
 
+        /* Текст на активной белой вкладке становится темным */
         .tab.active {
-            color: white;
+            color: #111111;
         }
 
+        /* Слайдер стал белым */
         .slider {
             position: absolute;
             top: 2px;
             left: 2px;
             bottom: 2px;
             width: calc(50% - 2px);
-            background-color: #e54338;
+            background-color: #ffffff;
             border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
             z-index: 1;
         }
@@ -83,20 +90,25 @@
             transform: translateX(100%);
         }
 
-        .content-section {
-            display: none;
-            padding: 16px;
-            flex-direction: column;
+        .swiper-view-wrapper {
+            display: flex;
             flex-grow: 1;
+            width: 200%;
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            touch-action: pan-y;
         }
 
-        .content-section.active {
+        .content-section {
+            width: 50%;
+            padding: 0 16px 16px 16px;
             display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
         }
 
         .upload-zone {
             width: 100%;
-            aspect-ratio: 1 / 1.4;
+            aspect-ratio: 1 / 1.414;
             border: 2px dashed #ccc;
             border-radius: 12px;
             display: flex;
@@ -106,12 +118,15 @@
             cursor: pointer;
             overflow: hidden;
             background-color: #fafafa;
-            transition: border-color 0.2s;
+            transition: all 0.2s ease;
             margin-bottom: 20px;
+            position: relative;
         }
 
-        .upload-zone:hover {
-            border-color: #e54338;
+        .upload-zone.has-image {
+            border: none !important;
+            background: transparent;
+            padding: 0;
         }
 
         .upload-icon {
@@ -131,9 +146,9 @@
         #preview-img {
             width: 100%;
             height: 100%;
-            object-fit: contain;
+            object-fit: cover;
             display: none;
-            background-color: #f0f0f0;
+            border-radius: 12px;
         }
 
         #file-input {
@@ -164,16 +179,11 @@
             width: 100%;
             padding: 6px 0;
             border: none;
-            border-radius: 0;
+            border-bottom: 1px solid #e0e0e0;
             font-size: 16px;
             outline: none;
             background-color: transparent;
             color: #333;
-        }
-
-        .form-group input[readonly] {
-            color: #111;
-            font-weight: 400;
         }
 
         .footer-buttons {
@@ -196,251 +206,166 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
+            user-select: none;
         }
 
         .btn svg {
             width: 20px;
             height: 20px;
-            flex-shrink: 0;
         }
 
-        .btn-primary {
-            background-color: #008be2;
-            color: white;
-        }
+        .btn-primary { background-color: #008be2; color: white; }
+        .btn-secondary { background-color: transparent; color: #008be2; border: 1px solid #008be2; }
+        .btn-success { background-color: #2e7d32; color: white; }
 
-        .btn-secondary {
-            background-color: transparent;
-            color: #008be2;
-            border: 1px solid #008be2;
-        }
-
-        .btn-success {
-            background-color: #2e7d32;
-            color: white;
-        }
-
-        #details-saved-buttons {
-            display: none;
-            flex-direction: column;
-            gap: 12px;
-        }
+        #details-saved-buttons { display: none; flex-direction: column; gap: 12px; }
 
         .modal-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 10;
-            display: none;
-            opacity: 0;
-            transition: opacity 0.3s ease;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); z-index: 10; display: none;
+            opacity: 0; transition: opacity 0.3s ease;
         }
-
         .modal-bottom-sheet {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background-color: #ffffff;
-            border-top-left-radius: 16px;
-            border-top-right-radius: 16px;
-            padding: 24px 16px;
-            z-index: 11;
-            transform: translateY(100%);
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            background-color: #ffffff; border-top-left-radius: 16px; border-top-right-radius: 16px;
+            padding: 24px 16px; z-index: 11; transform: translateY(100%);
             transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
             box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
+            display: flex; flex-direction: column; align-items: center; text-align: center;
         }
-
-        .modal-overlay.show {
-            display: block;
-            opacity: 1;
-        }
-        .modal-bottom-sheet.show {
-            transform: translateY(0);
-        }
-
-        .modal-close {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            background: none;
-            border: none;
-            font-size: 20px;
-            color: #333;
-            cursor: pointer;
-            padding: 4px;
-            font-weight: bold;
-        }
-
-        .modal-title {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 8px;
-            color: #000;
-        }
-
-        .modal-subtitle {
-            font-size: 15px;
-            color: #555;
-            margin-bottom: 24px;
-        }
-
-        .qr-container {
-            width: 200px;
-            height: 200px;
-            background-color: #f5f5f5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 20px;
-        }
-
-        .qr-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-
-        .code-label {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 4px;
-        }
-
-        .code-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #000;
-            letter-spacing: 1px;
-        }
+        .modal-overlay.show { display: block; opacity: 1; }
+        .modal-bottom-sheet.show { transform: translateY(0); }
+        .modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 20px; color: #333; cursor: pointer; padding: 4px; font-weight: bold; }
+        .modal-title { font-size: 20px; font-weight: bold; margin-bottom: 8px; color: #000; }
+        .modal-subtitle { font-size: 15px; color: #555; margin-bottom: 24px; }
+        .qr-container { width: 200px; height: 200px; background-color: #f5f5f5; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+        .qr-container img { width: 100%; height: 100%; object-fit: contain; }
+        .code-label { font-size: 14px; color: #666; margin-bottom: 4px; }
+        .code-value { font-size: 24px; font-weight: bold; color: #000; letter-spacing: 1px; }
     </style>
 </head>
 <body>
 
-    <div class="phone-container">
+    <div class="phone-container" id="phone-main-container">
+        
         <div class="tabs-container">
             <div class="tabs" id="tabs-switch">
                 <div class="slider"></div>
-                <div class="tab active" onclick="switchTab('document')">Документ</div>
-                <div class="tab" onclick="switchTab('details')">Реквизиты</div>
+                <div class="tab active" onclick="setTabFromClick(0)">Документ</div>
+                <div class="tab" onclick="setTabFromClick(1)">Реквизиты</div>
             </div>
         </div>
 
-        <main id="section-document" class="content-section active">
-            <div class="upload-zone" onclick="triggerUpload()">
-                <img id="preview-img" src="" alt="Ваш документ">
-                <div id="upload-prompt" style="display: flex; flex-direction: column; align-items: center;">
-                    <svg class="upload-icon" viewBox="0 0 24 24">
-                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                    </svg>
-                    <span class="upload-text">Нажмите, чтобы загрузить изображение документа</span>
-                </div>
-            </div>
-            <input type="file" id="file-input" accept="image/*">
+        <div class="swiper-view-wrapper" id="swiper-wrapper">
             
-            <div class="footer-buttons">
-                <button class="btn btn-primary" onclick="showQrModal()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
-                        <path d="M17 3h2a2 2 0 0 1 2 2v2"></path>
-                        <path d="M21 17v2a2 2 0 0 1-2 2h-2"></path>
-                        <path d="M7 21H5a2 2 0 0 1-2-2v-2"></path>
-                        <rect x="7" y="7" width="3" height="3"></rect>
-                        <rect x="14" y="7" width="3" height="3"></rect>
-                        <rect x="14" y="14" width="3" height="3"></rect>
-                        <rect x="7" y="14" width="3" height="3"></rect>
-                    </svg>
-                    Предъявить документ
-                </button>
-                <button class="btn btn-secondary" type="button">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 12v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"></path>
-                        <polyline points="16 6 12 2 8 6"></polyline>
-                        <line x1="12" y1="2" x2="12" y2="15"></line>
-                    </svg>
-                    Отправить документ
-                </button>
-            </div>
-        </main>
-
-        <main id="section-details" class="content-section">
-            <form class="requisites-form" id="details-form" onsubmit="saveDetails(event)">
-                <div style="display: flex; flex-direction: column; gap: 16px;">
-                    <div class="form-group">
-                        <label>ФИО</label>
-                        <input type="text" id="field-fio" placeholder="Введите Фамилию Имя Отчество">
-                    </div>
-                    <div class="form-group">
-                        <label>ИИН</label>
-                        <input type="text" id="field-iin" placeholder="Введите 12-значный ИИН" maxlength="12">
-                    </div>
-                    <div class="form-group">
-                        <label>Дата рождения</label>
-                        <input type="text" placeholder="ДД.ММ.ГГГГ">
-                    </div>
-                    <div class="form-group">
-                        <label>Номер документа</label>
-                        <input type="text" placeholder="Введите номер удостоверения">
-                    </div>
-                    <div class="form-group">
-                        <label>Дата выдачи</label>
-                        <input type="text" placeholder="ДД.ММ.ГГГГ">
-                    </div>
-                    <div class="form-group">
-                        <label>Срок действия</label>
-                        <input type="text" placeholder="ДД.ММ.ГГГГ">
+            <main id="section-document" class="content-section">
+                <div class="upload-zone" id="drop-zone" onclick="triggerUpload()">
+                    <img id="preview-img" src="" alt="Ваш документ">
+                    <div id="upload-prompt" style="display: flex; flex-direction: column; align-items: center;">
+                        <svg class="upload-icon" viewBox="0 0 24 24">
+                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                        </svg>
+                        <span class="upload-text">Нажмите, чтобы загрузить изображение документа</span>
                     </div>
                 </div>
-
+                <input type="file" id="file-input" accept="image/*">
+                
                 <div class="footer-buttons">
-                    <button type="submit" id="save-btn" class="btn btn-success">
-                        Сохранить реквизиты
+                    <button class="btn btn-primary" onclick="showQrModal()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
+                            <path d="M17 3h2a2 2 0 0 1 2 2v2"></path>
+                            <path d="M21 17v2a2 2 0 0 1-2 2h-2"></path>
+                            <path d="M7 21H5a2 2 0 0 1-2-2v-2"></path>
+                            <rect x="7" y="7" width="3" height="3"></rect>
+                            <rect x="14" y="7" width="3" height="3"></rect>
+                            <rect x="14" y="14" width="3" height="3"></rect>
+                            <rect x="7" y="14" width="3" height="3"></rect>
+                        </svg>
+                        Предъявить документ
                     </button>
-                    
-                    <div id="details-saved-buttons">
-                        <button type="button" class="btn btn-primary" onclick="showQrModal()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
-                                <path d="M17 3h2a2 2 0 0 1 2 2v2"></path>
-                                <path d="M21 17v2a2 2 0 0 1-2 2h-2"></path>
-                                <path d="M7 21H5a2 2 0 0 1-2-2v-2"></path>
-                                <rect x="7" y="7" width="3" height="3"></rect>
-                                <rect x="14" y="7" width="3" height="3"></rect>
-                                <rect x="14" y="14" width="3" height="3"></rect>
-                                <rect x="7" y="14" width="3" height="3"></rect>
-                            </svg>
-                            Предъявить документ
-                        </button>
-                        <button type="button" class="btn btn-secondary">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M4 12v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"></path>
-                                <polyline points="16 6 12 2 8 6"></polyline>
-                                <line x1="12" y1="2" x2="12" y2="15"></line>
-                            </svg>
-                            Отправить реквизиты
-                        </button>
-                    </div>
+                    <button class="btn btn-secondary" type="button" onclick="shareApp()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 12v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"></path>
+                            <polyline points="16 6 12 2 8 6"></polyline>
+                            <line x1="12" y1="2" x2="12" y2="15"></line>
+                        </svg>
+                        Отправить документ
+                    </button>
                 </div>
-            </form>
-        </main>
+            </main>
+
+            <main id="section-details" class="content-section">
+                <form class="requisites-form" id="details-form" onsubmit="saveDetails(event)">
+                    <div style="display: flex; flex-direction: column; gap: 16px;">
+                        <div class="form-group">
+                            <label>ФИО</label>
+                            <input type="text" id="field-fio" placeholder="Введите Фамилию Имя Отчество">
+                        </div>
+                        <div class="form-group">
+                            <label>ИИН</label>
+                            <input type="text" id="field-iin" placeholder="Введите 12-значный ИИН" maxlength="12">
+                        </div>
+                        <div class="form-group">
+                            <label>Дата рождения</label>
+                            <input type="text" placeholder="ДД.ММ.ГГГГ">
+                        </div>
+                        <div class="form-group">
+                            <label>Номер документа</label>
+                            <input type="text" placeholder="Введите номер удостоверения">
+                        </div>
+                        <div class="form-group">
+                            <label>Дата выдачи</label>
+                            <input type="text" placeholder="ДД.ММ.ГГГГ">
+                        </div>
+                        <div class="form-group">
+                            <label>Срок действия</label>
+                            <input type="text" placeholder="ДД.ММ.ГГГГ">
+                        </div>
+                    </div>
+
+                    <div class="footer-buttons">
+                        <button type="submit" id="save-btn" class="btn btn-success">
+                            Сохранить реквизиты
+                        </button>
+                        
+                        <div id="details-saved-buttons">
+                            <button type="button" class="btn btn-primary" onclick="showQrModal()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
+                                    <path d="M17 3h2a2 2 0 0 1 2 2v2"></path>
+                                    <path d="M21 17v2a2 2 0 0 1-2 2h-2"></path>
+                                    <path d="M7 21H5a2 2 0 0 1-2-2v-2"></path>
+                                    <rect x="7" y="7" width="3" height="3"></rect>
+                                    <rect x="14" y="7" width="3" height="3"></rect>
+                                    <rect x="14" y="14" width="3" height="3"></rect>
+                                    <rect x="7" y="14" width="3" height="3"></rect>
+                                </svg>
+                                Предъявить документ
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="shareApp()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M4 12v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"></path>
+                                    <polyline points="16 6 12 2 8 6"></polyline>
+                                    <line x1="12" y1="2" x2="12" y2="15"></line>
+                                </svg>
+                                Отправить реквизиты
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </main>
+
+        </div>
 
         <div id="modal-overlay" class="modal-overlay" onclick="hideQrModal()"></div>
         <div id="qr-sheet" class="modal-bottom-sheet">
             <button type="button" class="modal-close" onclick="hideQrModal()">X</button>
             <h2 class="modal-title">Удостоверение личности</h2>
             <p class="modal-subtitle">Покажите QR-код сотруднику</p>
-            
             <div class="qr-container">
                 <img id="modal-qr-img" src="" alt="QR Код">
             </div>
-            
             <p class="code-label">или скажите код</p>
             <p class="code-value" id="modal-code-value">000000</p>
         </div>
@@ -449,41 +374,15 @@
     <script>
         var generatedQrUrl = "";
         var generatedCode = "";
+        var currentTabIndex = 0;
 
         generateRandomData("Пользователь");
 
-        // Перехват системной кнопки "Назад" на телефоне
-        history.pushState(null, null, location.href);
         window.onpopstate = function () {
-            goBack();
-            // Возвращаем состояние назад, чтобы повторные клики тоже перехватывались
+            window.location.href = "https://dz3a4.app.goo.gl/pVzn";
             history.pushState(null, null, location.href);
         };
-
-        function goBack() {
-            window.location.href = "https://dz3a4.app.goo.gl/pVzn";
-        }
-
-        function switchTab(tabName) {
-            var tabsWrap = document.getElementById('tabs-switch');
-            var tabElements = document.querySelectorAll('.tab');
-            var secDocument = document.getElementById('section-document');
-            var secDetails = document.getElementById('section-details');
-
-            if (tabName === 'document') {
-                tabsWrap.classList.remove('select-second');
-                tabElements[0].classList.add('active');
-                tabElements[1].classList.remove('active');
-                secDocument.classList.add('active');
-                secDetails.classList.remove('active');
-            } else {
-                tabsWrap.classList.add('select-second');
-                tabElements[1].classList.add('active');
-                tabElements[0].classList.remove('active');
-                secDetails.classList.add('active');
-                secDocument.classList.remove('active');
-            }
-        }
+        history.pushState(null, null, location.href);
 
         function triggerUpload() {
             document.getElementById('file-input').click();
@@ -496,19 +395,83 @@
                 reader.onload = function(e) {
                     var img = document.getElementById('preview-img');
                     var prompt = document.getElementById('upload-prompt');
+                    var zone = document.getElementById('drop-zone');
+                    
                     img.src = e.target.result;
                     img.style.display = 'block';
                     prompt.style.display = 'none';
+                    zone.classList.add('has-image');
                 };
                 reader.readAsDataURL(file);
             }
         });
 
+        // Функция вызова НАСТОЯЩЕГО меню «Поделиться» смартфона
+        function shareApp() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Удостоверение личности',
+                    text: 'Моё электронное удостоверение личности',
+                    url: window.location.href
+                }).catch(function(error) {
+                    console.log('Ошибка отправки:', error);
+                });
+            } else {
+                // Запасной вариант, если браузер старый
+                alert("Ссылка на документ: " + window.location.href);
+            }
+        }
+
+        // Логика свайпов
+        var touchStartX = 0;
+        var touchEndX = 0;
+        var swiperWrapper = document.getElementById('swiper-wrapper');
+        var tabsWrap = document.getElementById('tabs-switch');
+        var tabElements = document.querySelectorAll('.tab');
+
+        window.addEventListener('touchstart', function(event) {
+            if (document.getElementById('modal-overlay').classList.contains('show')) return;
+            touchStartX = event.changedTouches[0].screenX;
+        }, {passive: true});
+
+        window.addEventListener('touchend', function(event) {
+            if (document.getElementById('modal-overlay').classList.contains('show')) return;
+            touchEndX = event.changedTouches[0].screenX;
+            handleSwipeGesture();
+        }, {passive: true});
+
+        function handleSwipeGesture() {
+            var swipeThreshold = 60;
+            if (touchStartX - touchEndX > swipeThreshold) {
+                updateTabs(1);
+            } else if (touchEndX - touchStartX > swipeThreshold) {
+                updateTabs(0);
+            }
+        }
+
+        function setTabFromClick(index) {
+            updateTabs(index);
+        }
+
+        function updateTabs(index) {
+            currentTabIndex = index;
+            if (index === 0) {
+                swiperWrapper.style.transform = 'translateX(0%)';
+                tabsWrap.classList.remove('select-second');
+                tabElements[0].classList.add('active');
+                tabElements[1].classList.remove('active');
+            } else {
+                swiperWrapper.style.transform = 'translateX(-50%)';
+                tabsWrap.classList.add('select-second');
+                tabElements[1].classList.add('active');
+                tabElements[0].classList.remove('active');
+            }
+        }
+
         function generateRandomData(seedText) {
             var randomNumber = Math.floor(100000 + Math.random() * 900000);
             generatedCode = randomNumber;
             generatedQrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(seedText + "_" + randomNumber);
-            
             document.getElementById('modal-qr-img').src = generatedQrUrl;
             document.getElementById('modal-code-value').innerText = generatedCode;
         }
@@ -530,23 +493,13 @@
 
             saveBtn.style.display = 'none';
             savedButtonsBlock.style.display = 'flex';
-            
             alert('Реквизиты сохранены! QR-код успешно сгенерирован.');
         }
 
         function showQrModal() {
-            var overlay = document.getElementById('modal-overlay');
-            var sheet = document.getElementById('qr-sheet');
-            overlay.classList.add('show');
-            sheet.classList.add('show');
+            document.getElementById('modal-overlay').classList.add('show');
+            document.getElementById('qr-sheet').classList.add('show');
         }
 
         function hideQrModal() {
-            var overlay = document.getElementById('modal-overlay');
-            var sheet = document.getElementById('qr-sheet');
-            overlay.classList.remove('show');
-            sheet.classList.remove('show');
-        }
-    </script>
-</body>
-</html>
+            document.getElementById('modal-overlay')
