@@ -150,11 +150,11 @@
             margin-bottom: 20px;
         }
 
+        /* УБРАЛИ ПОЛНУЮ БЛОКИРОВКУ ТАЧЕЙ, ЧТОБЫ СВАЙПЫ РАБОТАЛИ */
         .upload-zone.has-image {
             border: none !important;
             background: transparent;
             padding: 0;
-            pointer-events: none;
             cursor: default;
         }
 
@@ -249,7 +249,6 @@
 
         #details-saved-buttons { display: none; flex-direction: column; gap: 12px; }
 
-        /* Модалка QR */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: rgba(0, 0, 0, 0.5); z-index: 200; display: none;
@@ -427,10 +426,11 @@
         };
         history.pushState(null, null, location.href);
 
+        // ВСЯ БЛОКИРОВКА ТЕПЕРЬ СТРОГО ЗДЕСЬ. ТАЧИ ДЛЯ СВАЙПОВ СВОБОДНЫ
         function triggerUpload() {
             var zone = document.getElementById('drop-zone');
             if (zone.classList.contains('has-image')) {
-                return;
+                return; // Если картинка загружена — клик просто игнорируется, окно не вылезает
             }
             document.getElementById('file-input').click();
         }
@@ -453,7 +453,6 @@
             }
         });
 
-        // УЛУЧШЕННАЯ ФУНКЦИЯ ШЕРИНГА БЕЗ СТОРОННИХ САЙТОВ
         function shareApp() {
             var shareData = {
                 title: 'Удостоверение личности',
@@ -461,13 +460,11 @@
                 url: window.location.href
             };
 
-            // Проверяем, поддерживает ли встроенный браузер системное меню отправки
             if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
                 navigator.share(shareData)
                     .then(function() { console.log('Успешно отправлено'); })
                     .catch(function(err) { console.log('Ошибка шеринга: ', err); });
             } else {
-                // Железобетонный фолбек: если меню заблокировано средой WebView, просто копируем ссылку
                 var dummy = document.createElement('input');
                 document.body.appendChild(dummy);
                 dummy.value = window.location.href;
@@ -499,22 +496,6 @@
         });
 
         wrapper.addEventListener('touchstart', function(e) {
-            if (document.activeElement.tagName === 'INPUT') {
-                isTracking = false;
-                return;
-            }
-            if (document.getElementById('modal-overlay').classList.contains('show')) return;
-            
-            isTracking = true;
-            isScrollingPercent = false;
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-            
-            wrapper.style.transition = 'none';
-            slider.style.transition = 'none';
-        }, {passive: false});
-
-        wrapper.addEventListener('touchmove', function(e) {
             if (document.activeElement.tagName === 'INPUT') {
                 isTracking = false;
                 return;
