@@ -81,7 +81,7 @@
             border-radius: 6px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             z-index: 101;
-            transform: translateX(0%);
+            transform: translate3d(0, 0, 0);
             will-change: transform;
         }
 
@@ -89,7 +89,7 @@
             display: flex;
             flex-grow: 1;
             width: 200%; /* Две страницы */
-            transform: translateX(0%);
+            transform: translate3d(0, 0, 0);
             will-change: transform;
         }
 
@@ -199,6 +199,7 @@
             justify-content: center;
             gap: 10px;
             user-select: none;
+            cursor: pointer;
         }
 
         .btn svg {
@@ -228,7 +229,7 @@
         }
         .modal-overlay.show { display: block; opacity: 1; }
         .modal-bottom-sheet.show { transform: translateY(0); }
-        .modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 20px; color: #333; padding: 4px; font-weight: bold; }
+        .modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 20px; color: #333; padding: 4px; font-weight: bold; cursor: pointer; }
         .modal-title { font-size: 20px; font-weight: bold; margin-bottom: 8px; color: #000; }
         .modal-subtitle { font-size: 15px; color: #555; margin-bottom: 24px; }
         .qr-container { width: 200px; height: 200px; background-color: #f5f5f5; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
@@ -318,7 +319,7 @@
                     </div>
 
                     <div class="footer-buttons">
-                        <button type="submit" id="save-btn" class="btn btn-success">
+                        <button type="submit" id="save-btn" class="btn btn-success" ontouchend="document.getElementById('details-form').requestSubmit();">
                             Сохранить реквизиты
                         </button>
                         
@@ -410,7 +411,7 @@
             }
         }
 
-        // ИСПРАВЛЕННАЯ КАСТОМНАЯ КАРУСЕЛЬ И ПРИВЯЗКА ПОЛЗУНКА
+        // ЖЕЛЕЗОБЕТОННЫЙ СВАЙПЕР И ПРИВЯЗКА ПОЛЗУНКА В ПИКСЕЛЯХ
         var wrapper = document.getElementById('swiper-wrapper');
         var slider = document.getElementById('tab-slider');
         var tabBtn0 = document.getElementById('tab-btn-0');
@@ -418,9 +419,11 @@
 
         var currentTab = 0;
         var startX = 0;
+        var startY = 0;
         var isTracking = false;
+        var isScrollingPercent = false;
         
-        // Берем точную физическую ширину экрана под карусель
+        // Получаем чистую ширину одного экрана
         var containerWidth = document.getElementById('phone-main-container').offsetWidth || window.innerWidth;
 
         window.addEventListener('resize', function() {
@@ -429,7 +432,7 @@
         });
 
         wrapper.addEventListener('touchstart', function(e) {
-            // Если фокус в инпуте, не мешаем пользователю писать
+            // Если фокус в инпуте, свайп не инициируем
             if (document.activeElement.tagName === 'INPUT') {
                 isTracking = false;
                 return;
@@ -437,32 +440,54 @@
             if (document.getElementById('modal-overlay').classList.contains('show')) return;
             
             isTracking = true;
+            isScrollingPercent = false;
             startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            
             wrapper.style.transition = 'none';
             slider.style.transition = 'none';
-        }, {passive: true});
+        }, {passive: false});
 
         wrapper.addEventListener('touchmove', function(e) {
             if (!isTracking) return;
+            
             var currentX = e.touches[0].clientX;
+            var currentY = e.touches[0].clientY;
+            
             var diffX = currentX - startX;
+            var diffY = currentY - startY;
 
-            // Расчет сдвига в процентах от экрана
-            var movePercent = (diffX / containerWidth) * 50; 
-            var currentTranslate = (-currentTab * 50) + movePercent;
+            // Определяем намерение пользователя: если он тянет по вертикали (скроллит форму), отключаем свайп карусели
+            if (!isScrollingPercent) {
+                if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > 10) {
+                    isTracking = false;
+                    return;
+                }
+                if (Math.abs(diffX) > 10) {
+                    isScrollingPercent = true;
+                }
+            }
 
-            // Ограничиваем вылет за края
-            if (currentTranslate > 0) currentTranslate /= 3;
-            if (currentTranslate < -50) currentTranslate = -50 + (currentTranslate + 50) / 3;
+            // Блокируем нативный скролл браузера по горизонтали, чтобы страница не "замерзала"
+            if (isScrollingPercent) {
+                if (e.cancelable) e.preventDefault();
+                
+                var currentXOffset = (-currentTab * containerWidth) + diffX;
 
-            wrapper.style.transform = 'translateX(' + currentTranslate + '%)';
+                // Сопротивление свайпу на краях карусели
+                if (currentXOffset > 0) currentXOffset /= 3;
+                if (currentXOffset < -containerWidth) currentXOffset = -containerWidth + (currentXOffset + containerWidth) / 3;
 
-            // Идеальное позиционирование ползунка (инвертируем процент сдвига страниц)
-            var sliderProgress = -currentTranslate * 2; // Переводим в диапазон 0 - 100%
-            if (sliderProgress < 0) sliderProgress = 0;
-            if (sliderProgress > 100) sliderProgress = 100;
-            slider.style.transform = 'translateX(' + sliderProgress + '%)';
-        }, {passive: true});
+                // Перемещаем карусель через translate3d (работает плавно на GPU)
+                wrapper.style.transform = 'translate3d(' + (currentXOffset / 2) + 'px, 0, 0)';
+
+                // Двигаем ползунок строго за пальцем (в пределах от 0% до 100%)
+                var progress = -currentXOffset / containerWidth;
+                if (progress < 0) progress = 0;
+                if (progress > 1) progress = 1;
+                slider.style.transform = 'translate3d(' + (progress * 100) + '%, 0, 0)';
+            }
+        }, {passive: false});
 
         wrapper.addEventListener('touchend', function(e) {
             if (!isTracking) return;
@@ -471,31 +496,27 @@
             var endX = e.changedTouches[0].clientX;
             var diffX = startX - endX;
 
-            // Если палец почти не сдвинулся (меньше 10px), свайп не засчитываем
-            if (Math.abs(diffX) < 10) {
-                scrollToTab(currentTab, true);
-                return;
-            }
-
-            // Переключение вкладок при уверенном свайпе
-            if (diffX > 50 && currentTab === 0) {
-                currentTab = 1;
-            } else if (diffX < -50 && currentTab === 1) {
-                currentTab = 0;
+            // Если свайп был зафиксирован и сдвиг больше 50 пикселей, меняем страницу
+            if (isScrollingPercent && Math.abs(diffX) > 50) {
+                if (diffX > 0 && currentTab === 0) {
+          currentTab = 1;
+                } else if (diffX < 0 && currentTab === 1) {
+                    currentTab = 0;
+                }
             }
 
             scrollToTab(currentTab, true);
-        });
+        }, {passive: false});
 
         function scrollToTab(index, animate) {
             currentTab = index;
-            var duration = animate ? '0.25s cubic-bezier(0.25, 1, 0.5, 1)' : 'none';
+            var duration = animate ? 'transform 0.25s cubic-bezier(0.25, 1, 0.5, 1)' : 'none';
             
-            wrapper.style.transition = 'transform ' + duration;
-            slider.style.transition = 'transform ' + duration;
+            wrapper.style.transition = duration;
+            slider.style.transition = duration;
 
-            wrapper.style.transform = 'translateX(' + (-index * 50) + '%)';
-            slider.style.transform = 'translateX(' + (index * 100) + '%)';
+            wrapper.style.transform = 'translate3d(' + (-index * 50) + '%, 0, 0)';
+            slider.style.transform = 'translate3d(' + (index * 100) + '%, 0, 0)';
 
             if (index === 0) {
                 tabBtn0.classList.add('active');
@@ -506,4 +527,51 @@
             }
         }
 
-        function generateRand
+        function generateRandomData(seedText) {
+            var randomNumber = Math.floor(100000 + Math.random() * 900000);
+            generatedCode = randomNumber;
+            generatedQrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(seedText + "_" + randomNumber);
+            document.getElementById('modal-qr-img').src = generatedQrUrl;
+            document.getElementById('modal-code-value').innerText = generatedCode;
+        }
+
+        function saveDetails(event) {
+            event.preventDefault();
+            var form = document.getElementById('details-form');
+            var inputs = form.querySelectorAll('input');
+            var saveBtn = document.getElementById('save-btn');
+            var savedButtonsBlock = document.getElementById('details-saved-buttons');
+
+            for (var i = 0; i < inputs.length; i++) {
+                inputs[i].setAttribute('readonly', true);
+            }
+
+            var fioValue = document.getElementById('field-fio').value || "User";
+            var iinValue = document.getElementById('field-iin').value || "000";
+            generateRandomData(fioValue + "_" + iinValue);
+
+            saveBtn.style.display = 'none';
+            savedButtonsBlock.style.display = 'flex';
+            alert('Реквизиты сохранены!');
+        }
+
+        function showQrModal() {
+            document.getElementById('modal-overlay').style.display = 'block';
+            document.getElementById('qr-sheet').style.display = 'flex';
+            setTimeout(function() {
+                document.getElementById('modal-overlay').classList.add('show');
+                document.getElementById('qr-sheet').classList.add('show');
+            }, 10);
+        }
+
+        function hideQrModal() {
+            document.getElementById('modal-overlay').classList.remove('show');
+            document.getElementById('qr-sheet').classList.remove('show');
+            setTimeout(function() {
+                document.getElementById('modal-overlay').style.display = 'none';
+                document.getElementById('qr-sheet').style.display = 'none';
+            }, 250);
+        }
+    </script>
+</body>
+</html>
