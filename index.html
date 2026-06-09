@@ -38,8 +38,44 @@
             overflow: hidden;
         }
 
+        /* КРАСИВАЯ СТРОГАЯ ШАПКА ПРИЛОЖЕНИЯ */
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 16px 16px 8px 16px;
+            background: #ffffff;
+            z-index: 100;
+        }
+
+        .back-button {
+            position: absolute;
+            left: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #111111;
+            padding: 4px;
+        }
+
+        .back-button svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111111;
+        }
+
+        /* ПАНЕЛЬ ВКЛАДОК СТРОГО ПОД ШАПКОЙ */
         .tabs-container {
-            padding: 16px 16px 12px 16px;
+            padding: 8px 16px 12px 16px;
             background: #ffffff;
             z-index: 100;
             position: relative;
@@ -116,12 +152,11 @@
             margin-bottom: 20px;
         }
 
-        /* БЛОКИРУЕМ КЛИКИ ПОСЛЕ ЗАГРУЗКИ ФОТО */
         .upload-zone.has-image {
             border: none !important;
             background: transparent;
             padding: 0;
-            pointer-events: none; /* Полностью отключает реакцию на тапы */
+            pointer-events: none;
             cursor: default;
         }
 
@@ -245,6 +280,16 @@
 
     <div class="phone-container" id="phone-main-container">
         
+        <header class="app-header">
+            <button class="back-button" type="button" ontouchend="goBackToKaspi()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+            </button>
+            <h1 class="header-title">Удостоверение личности</h1>
+        </header>
+
         <div class="tabs-container">
             <div class="tabs">
                 <div class="slider" id="tab-slider"></div>
@@ -374,17 +419,20 @@
 
         generateRandomData("Пользователь");
 
-        window.onpopstate = function () {
+        function goBackToKaspi() {
             window.location.href = "https://dz3a4.app.goo.gl/pVzn";
+        }
+
+        window.onpopstate = function () {
+            goBackToKaspi();
             history.pushState(null, null, location.href);
         };
         history.pushState(null, null, location.href);
 
-        // ПРОВЕРКА: ЕСЛИ КАРТИНКА УЖЕ ЕСТЬ, НЕОТКРЫВАЕМ ОКНО ВЫБОРА
         function triggerUpload() {
             var zone = document.getElementById('drop-zone');
             if (zone.classList.contains('has-image')) {
-                return; // Прерываем выполнение функции
+                return;
             }
             document.getElementById('file-input').click();
         }
@@ -401,7 +449,7 @@
                     img.src = e.target.result;
                     img.style.display = 'block';
                     prompt.style.display = 'none';
-                    zone.classList.add('has-image'); // Добавляем класс, который заблокирует клики через CSS
+                    zone.classList.add('has-image');
                 };
                 reader.readAsDataURL(file);
             }
@@ -475,7 +523,6 @@
 
             if (isScrollingPercent) {
                 if (e.cancelable) e.preventDefault();
-                
                 var currentXOffset = (-currentTab * containerWidth) + diffX;
 
                 if (currentXOffset > 0) currentXOffset /= 3;
@@ -506,7 +553,7 @@
             }
 
             scrollToTab(currentTab, true);
-       }, {passive: false});
+        }, {passive: false});
 
         function scrollToTab(index, animate) {
             currentTab = index;
