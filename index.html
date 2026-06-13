@@ -148,20 +148,14 @@
             overflow: hidden;
             background-color: #fafafa;
             margin-bottom: 20px;
+            position: relative;
         }
 
         .upload-zone.has-image {
             border: none !important;
-            background: transparent;
+            background: #000000; /* Черный фон сзади при зуме выглядит аккуратнее */
             padding: 0;
             cursor: default;
-        }
-
-        /* Контейнер для корректной работы PinchZoom внутри сетки */
-        .pinch-zoom-container {
-            width: 100%;
-            height: 100%;
-            display: none;
         }
 
         .upload-icon {
@@ -178,11 +172,25 @@
             padding: 0 20px;
         }
 
+        /* Контейнер-обертка для изоляции тачей и зума */
+        .zoom-wrapper {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            border-radius: 12px;
+        }
+
         #preview-img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border-radius: 12px;
+            transform-origin: center center;
+            will-change: transform;
+            transition: none;
         }
 
         #file-input {
@@ -277,8 +285,6 @@
         .code-label { font-size: 14px; color: #666; margin-bottom: 4px; }
         .code-value { font-size: 24px; font-weight: bold; color: #000; letter-spacing: 1px; }
     </style>
-    
-    <script src="https://unpkg.com/pinch-zoom-js@2.3.4/dist/pinch-zoom.umd.js"></script>
 </head>
 <body>
 
@@ -305,11 +311,11 @@
         <div class="swiper-view-wrapper" id="swiper-wrapper">
             
             <main id="section-document" class="content-section">
-                <div class="upload-zone" id="drop-zone" ontouchend="triggerUpload()">
-                    <div id="zoom-area" class="pinch-zoom-container">
+                <div class="upload-zone" id="drop-zone">
+                    <div class="zoom-wrapper" id="zoom-container">
                         <img id="preview-img" src="" alt="Ваш документ">
                     </div>
-                    <div id="upload-prompt" style="display: flex; flex-direction: column; align-items: center;">
+                    <div id="upload-prompt" style="display: flex; flex-direction: column; align-items: center;" ontouchend="triggerUpload()">
                         <svg class="upload-icon" viewBox="0 0 24 24">
                             <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
                         </svg>
@@ -422,7 +428,6 @@
     <script>
         var generatedQrUrl = "";
         var generatedCode = "";
-        var pzInstance = null; // Экземпляр зума
 
         generateRandomData("Пользователь");
 
@@ -438,9 +443,7 @@
 
         function triggerUpload() {
             var zone = document.getElementById('drop-zone');
-            if (zone.classList.contains('has-image')) {
-                return; 
-            }
+            if (zone.classList.contains('has-image')) return; 
             document.getElementById('file-input').click();
         }
 
@@ -452,25 +455,108 @@
                     var img = document.getElementById('preview-img');
                     var prompt = document.getElementById('upload-prompt');
                     var zone = document.getElementById('drop-zone');
-                    var zoomArea = document.getElementById('zoom-area');
+                    var container = document.getElementById('zoom-container');
                     
                     img.src = e.target.result;
-                    zoomArea.style.display = 'block';
+                    container.style.display = 'block';
                     prompt.style.display = 'none';
                     zone.classList.add('has-image');
-
-                    // Инициализируем плавное приближение картинки
-                    if(!pzInstance) {
-                        pzInstance = new PinchZoom(zoomArea, {
-                            draggableUnzoomed: false, // Чтобы картинка не болталась, когда не приближена
-                            minZoom: 1,
-                            maxZoom: 4
-                        });
-                    }
+                    
+                    initNativeZoom(); // Запускаем наш нативный зум
                 };
                 reader.readAsDataURL(file);
             }
         });
+
+        // НАПИСАННЫЙ С НУЛЯ НА ТАЧАХ НАДЁЖНЫЙ ЗУМ ИЗОБРАЖЕНИЯ
+        var scale = 1;
+        var maxScale = 4;
+        var minScale = 1;
+        var posX = 0;
+        var posY = 0;
+        var imgStartTouchX = 0;
+        var imgStartTouchY = 0;
+        var lastTouchX = 0;
+        var lastTouchY = 0;
+        var startDistance = 0;
+        var isPinching = false;
+        var isDraggingImg = false;
+
+        function initNativeZoom() {
+            var img = document.getElementById('preview-img');
+            var container = document.getElementById('zoom-container');
+
+            container.addEventListener('touchstart', function(e) {
+                if (e.touches.length === 2) {
+                    isPinching = true;
+                    isDraggingImg = false;
+                    startDistance = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                } else if (e.touches.length === 1 && scale > 1) {
+                    isDraggingImg = true;
+                    isPinching = false;
+                    lastTouchX = e.touches[0].clientX;
+                    lastTouchY = e.touches[0].clientY;
+                }
+            }, {passive: true});
+
+            container.addEventListener('touchmove', function(e) {
+                if (isPinching && e.touches.length === 2) {
+                    var currentDistance = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    var factor = currentDistance / startDistance;
+                    startDistance = currentDistance;
+                    
+                    var newScale = scale * factor;
+                    if (newScale >= minScale && newScale <= maxScale) {
+                        scale = newScale;
+                    }
+                    updateImgTransform();
+              } else if (isDraggingImg && e.touches.length === 1 && scale > 1) {
+                    var currentX = e.touches[0].clientX;
+                    var currentY = e.touches[0].clientY;
+                    
+                    posX += currentX - lastTouchX;
+                    posY += currentY - lastTouchY;
+                    
+                    lastTouchX = currentX;
+                    lastTouchY = currentY;
+                    updateImgTransform();
+                }
+            }, {passive: true});
+
+            container.addEventListener('touchend', function(e) {
+                if (e.touches.length < 2) isPinching = false;
+                if (e.touches.length === 0) {
+                    isDraggingImg = false;
+                    // Если стянули картинку обратно к минимуму — плавно сбрасываем в центр
+                    if (scale <= 1.05) {
+                        resetImg();
+                    }
+                }
+            }, {passive: true});
+        }
+
+        function updateImgTransform() {
+            var img = document.getElementById('preview-img');
+            img.style.transform = 'translate3d(' + posX + 'px, ' + posY + 'px, 0) scale(' + scale + ')';
+        }
+
+        function resetImg() {
+            scale = 1;
+            posX = 0;
+            posY = 0;
+            var img = document.getElementById('preview-img');
+            img.style.transition = 'transform 0.2s ease-out';
+            updateImgTransform();
+            setTimeout(function() {
+                if(img) img.style.transition = 'none';
+            }, 200);
+        }
 
         function shareApp() {
             var shareData = {
@@ -495,7 +581,7 @@
             }
         }
 
-        // СВАЙПЕР И ПРИВЯЗКА ПОЛЗУНКОВ
+        /* КОРРЕКТНЫЙ СВАЙПЕР ВКЛАДОК */
         var wrapper = document.getElementById('swiper-wrapper');
         var slider = document.getElementById('tab-slider');
         var tabBtn0 = document.getElementById('tab-btn-0');
@@ -514,8 +600,9 @@
             scrollToTab(currentTab, false);
         });
 
-        wrapper.addEventListener('touchstart', function(e) {// Если картинка сейчас увеличена пользователем, временно отключаем свайпы вкладок, чтобы дать перемещать картинку внутри рамки
-            if (pzInstance && pzInstance.zoomFactor > 1.05) {
+        wrapper.addEventListener('touchstart', function(e) {
+            // КРИТИЧЕСКИЙ СЕКРЕТ: Если картинка сейчас приближена, запрещаем свайпать вкладку! Даем двигать картинку
+            if (scale > 1.05 || isPinching) {
                 isTracking = false;
                 return;
             }
@@ -591,6 +678,12 @@
 
         function scrollToTab(index, animate) {
             currentTab = index;
+            
+            // Если уходим с первой вкладки, сбрасываем зум картинки назад, чтобы не висла в воздухе
+            if(index === 1) {
+                resetImg();
+            }
+
             var duration = animate ? 'transform 0.25s cubic-bezier(0.25, 1, 0.5, 1)' : 'none';
             
             wrapper.style.transition = duration;
@@ -656,4 +749,3 @@
     </script>
 </body>
 </html>
-    
