@@ -483,18 +483,18 @@
         });
 
         // НАПИСАННЫЙ С НУЛЯ НА ТАЧАХ НАДЁЖНЫЙ ЗУМ ИЗОБРАЖЕНИЯ
-        var scale = 1;
+        
+                            var scale = 1;
         var maxScale = 4;
         var minScale = 1;
         var posX = 0;
         var posY = 0;
-        var imgStartTouchX = 0;
-        var imgStartTouchY = 0;
         var lastTouchX = 0;
         var lastTouchY = 0;
         var startDistance = 0;
         var isPinching = false;
         var isDraggingImg = false;
+
         function initNativeZoom() {
             var img = document.getElementById('preview-img');
             var container = document.getElementById('zoom-container');
@@ -528,10 +528,22 @@
                     startDistance = currentDistance;
                     
                     var newScale = scale * factor;
-                    // Разрешаем временно сжимать чуть меньше 1 при живом жесте для мягкости (до 0.8)
+                    // Позволяем мягко сжимать чуть меньше 1 во время жеста (до 0.8)
                     if (newScale >= 0.8 && newScale <= maxScale) {
                         scale = newScale;
                     }
+                    
+                    // При изменении масштаба также корректируем позицию, чтобы картинку не выталкивало за края
+                    var maxLeftRight = (container.offsetWidth * (scale - 1)) / 2;
+                    var maxTopBottom = (container.offsetHeight * (scale - 1)) / 2;
+                    if (scale > 1) {
+                        posX = Math.min(Math.max(posX, -maxLeftRight), maxLeftRight);
+                        posY = Math.min(Math.max(posY, -maxTopBottom), maxTopBottom);
+                    } else {
+                        posX = 0;
+                        posY = 0;
+                    }
+                    
                     updateImgTransform();
                 } else if (isDraggingImg && e.touches.length === 1 && scale > 1) {
                     if (e.cancelable) e.preventDefault();
@@ -539,8 +551,16 @@
                     var currentX = e.touches[0].clientX;
                     var currentY = e.touches[0].clientY;
                     
-                    posX += currentX - lastTouchX;
-                    posY += currentY - lastTouchY;
+                    var deltaX = currentX - lastTouchX;
+                    var deltaY = currentY - lastTouchY;
+                    
+                    // Вычисляем лимиты сдвига: на сколько пикселей картинка стала больше контейнера
+                    var maxLeftRight = (container.offsetWidth * (scale - 1)) / 2;
+                    var maxTopBottom = (container.offsetHeight * (scale - 1)) / 2;
+                    
+                    // Жестко ограничиваем координаты posX и posY, не давая краям фото уйти внутрь белой рамки
+                    posX = Math.min(Math.max(posX + deltaX, -maxLeftRight), maxLeftRight);
+                    posY = Math.min(Math.max(posY + deltaY, -maxTopBottom), maxTopBottom);
                     
                     lastTouchX = currentX;
                     lastTouchY = currentY;
@@ -552,7 +572,7 @@
                 if (e.touches.length < 2) isPinching = false;
                 if (e.touches.length === 0) {
                     isDraggingImg = false;
-                    // Если картинку отпустили и она меньше оригинала или равна ему — сбрасываем в идеальный центр
+                    // Если пальцы убрали, а картинка сжата меньше исходного размера — возвращаем её в рамки
                     if (scale <= 1.05) {
                         resetImg();
                     }
@@ -560,18 +580,27 @@
             }, {passive: true});
         }
 
+        function updateImgTransform() {
+            var img = document.getElementById('preview-img');
+            if (img) {
+                img.style.transform = 'translate3d(' + posX + 'px, ' + posY + 'px, 0) scale(' + scale + ')';
+            }
+        }
+
         function resetImg() {
             scale = 1;
             posX = 0;
             posY = 0;
             var img = document.getElementById('preview-img');
-            // Добавляем плавную анимацию возврата
-            img.style.transition = 'transform 0.25s cubic-bezier(0.25, 1, 0.5, 1)';
-            updateImgTransform();
-            setTimeout(function() {
-                if(img) img.style.transition = 'none';
-            }, 250);
-        }
+            if (img) {
+                img.style.transition = 'transform 0.25s cubic-bezier(0.25, 1, 0.5, 1)';
+                updateImgTransform();
+                setTimeout(function() {
+                    if (img) img.style.transition = 'none';
+                }, 250);
+            }
+                                        }
+        
         
 
             container.addEventListener('touchmove', function(e) {
