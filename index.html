@@ -152,25 +152,24 @@
         }
 
         .upload-zone.has-image {
-    border: none !important;
-    background: #ffffff; /* Белый фон для самой зоны */
-    padding: 0;
-    cursor: default;
-}
+            border: none !important;
+            background: #ffffff;
+            padding: 0;
+            cursor: default;
+        }
 
-/* Контейнер-обертка для изоляции тачей и зума */
-.zoom-wrapper {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    display: none;
-    position: absolute;
-    top: 0;
-    left: 0;
-    border-radius: 12px;
-    background: #ffffff; /* Добавляем белый фон сюда, чтобы при сдвигах не было темноты */
-}
-        
+        /* Контейнер-обертка для изоляции тачей и белого фона при зуме */
+        .zoom-wrapper {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            border-radius: 12px;
+            background: #ffffff;
+        }
 
         .upload-icon {
             width: 48px;
@@ -184,18 +183,6 @@
             color: #666;
             text-align: center;
             padding: 0 20px;
-        }
-
-        /* Контейнер-обертка для изоляции тачей и зума */
-        .zoom-wrapper {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            display: none;
-            position: absolute;
-            top: 0;
-            left: 0;
-            border-radius: 12px;
         }
 
         #preview-img {
@@ -476,16 +463,15 @@
                     prompt.style.display = 'none';
                     zone.classList.add('has-image');
                     
-                    initNativeZoom(); // Запускаем наш нативный зум
+                    initNativeZoom();
                 };
                 reader.readAsDataURL(file);
             }
         });
 
-        // НАПИСАННЫЙ С НУЛЯ НА ТАЧАХ НАДЁЖНЫЙ ЗУМ ИЗОБРАЖЕНИЯ
-        
+        // НАПИСАННЫЙ С НУЛЯ НА ТАЧАХ НАДЁЖНЫЙ ЗУМ С ОГРАНИЧЕНИЕМ ГРАНИЦ И БЕЛЫМ ПОЛЕМ
         var scale = 1;
-        var maxScale = 3;
+        var maxScale = 4;
         var minScale = 1;
         var posX = 0;
         var posY = 0;
@@ -528,12 +514,10 @@
                     startDistance = currentDistance;
                     
                     var newScale = scale * factor;
-                    // Позволяем мягко сжимать чуть меньше 1 во время жеста (до 0.8)
                     if (newScale >= 0.8 && newScale <= maxScale) {
                         scale = newScale;
-                    }
+                       }
                     
-                    // При изменении масштаба также корректируем позицию, чтобы картинку не выталкивало за края
                     var maxLeftRight = (container.offsetWidth * (scale - 1)) / 2;
                     var maxTopBottom = (container.offsetHeight * (scale - 1)) / 2;
                     if (scale > 1) {
@@ -554,11 +538,9 @@
                     var deltaX = currentX - lastTouchX;
                     var deltaY = currentY - lastTouchY;
                     
-                    // Вычисляем лимиты сдвига: на сколько пикселей картинка стала больше контейнера
                     var maxLeftRight = (container.offsetWidth * (scale - 1)) / 2;
                     var maxTopBottom = (container.offsetHeight * (scale - 1)) / 2;
                     
-                    // Жестко ограничиваем координаты posX и posY, не давая краям фото уйти внутрь белой рамки
                     posX = Math.min(Math.max(posX + deltaX, -maxLeftRight), maxLeftRight);
                     posY = Math.min(Math.max(posY + deltaY, -maxTopBottom), maxTopBottom);
                     
@@ -572,7 +554,6 @@
                 if (e.touches.length < 2) isPinching = false;
                 if (e.touches.length === 0) {
                     isDraggingImg = false;
-                    // Если пальцы убрали, а картинка сжата меньше исходного размера — возвращаем её в рамки
                     if (scale <= 1.05) {
                         resetImg();
                     }
@@ -599,64 +580,6 @@
                     if (img) img.style.transition = 'none';
                 }, 250);
             }
-                                        }
-        
-        
-
-            container.addEventListener('touchmove', function(e) {
-                if (isPinching && e.touches.length === 2) {
-                    var currentDistance = Math.hypot(
-                        e.touches[0].clientX - e.touches[1].clientX,
-                        e.touches[0].clientY - e.touches[1].clientY
-                    );
-                    var factor = currentDistance / startDistance;
-                    startDistance = currentDistance;
-                    
-                    var newScale = scale * factor;
-                    if (newScale >= minScale && newScale <= maxScale) {
-                        scale = newScale;
-                    }
-                    updateImgTransform();
-              } else if (isDraggingImg && e.touches.length === 1 && scale > 1) {
-                    var currentX = e.touches[0].clientX;
-                    var currentY = e.touches[0].clientY;
-                    
-                    posX += currentX - lastTouchX;
-                    posY += currentY - lastTouchY;
-                    
-                    lastTouchX = currentX;
-                    lastTouchY = currentY;
-                    updateImgTransform();
-                }
-            }, {passive: true});
-
-            container.addEventListener('touchend', function(e) {
-                if (e.touches.length < 2) isPinching = false;
-                if (e.touches.length === 0) {
-                    isDraggingImg = false;
-                    // Если стянули картинку обратно к минимуму — плавно сбрасываем в центр
-                    if (scale <= 1.05) {
-                        resetImg();
-                    }
-                }
-            }, {passive: true});
-        }
-
-        function updateImgTransform() {
-            var img = document.getElementById('preview-img');
-            img.style.transform = 'translate3d(' + posX + 'px, ' + posY + 'px, 0) scale(' + scale + ')';
-        }
-
-        function resetImg() {
-            scale = 1;
-            posX = 0;
-            posY = 0;
-            var img = document.getElementById('preview-img');
-            img.style.transition = 'transform 0.2s ease-out';
-            updateImgTransform();
-            setTimeout(function() {
-                if(img) img.style.transition = 'none';
-            }, 200);
         }
 
         function shareApp() {
@@ -702,7 +625,6 @@
         });
 
         wrapper.addEventListener('touchstart', function(e) {
-            // КРИТИЧЕСКИЙ СЕКРЕТ: Если картинка сейчас приближена, запрещаем свайпать вкладку! Даем двигать картинку
             if (scale > 1.05 || isPinching) {
                 isTracking = false;
                 return;
@@ -780,7 +702,6 @@
         function scrollToTab(index, animate) {
             currentTab = index;
             
-            // Если уходим с первой вкладки, сбрасываем зум картинки назад, чтобы не висла в воздухе
             if(index === 1) {
                 resetImg();
             }
